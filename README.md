@@ -23,7 +23,7 @@ You can set the markdown display for any element.
 2. 実行したいjavascriptでmain.jsを読み込んで、変換したい文字が含まれている対象のエレメントをセットする。
 ```
 <script type='module'>
-import { Markdown as MD} from from './markdown_viewer/src/main.js'
+import { Markdown } from './markdown_viewer/src/main.js'
 
 new Markdown({elm : element})
 </script>
