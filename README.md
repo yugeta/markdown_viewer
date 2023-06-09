@@ -32,7 +32,7 @@ new Markdown({elm : element})
 3. 任意のタイミングで、任意のelement内を変換したい場合
 ```
 <script type='module'>
-import { Markdown as MD} from from './markdown_viewer/src/main.js'
+import { Markdown } from './markdown_viewer/src/main.js'
 
 const element = document.querySelector('target-element')
 element.innerHTML = new Markdown().convert(element.innerHTML)
