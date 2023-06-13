@@ -1,10 +1,12 @@
-<script id='markdown' type='module' src='../src/main.js'></script>
-
-<div class='markdown'>Markdown Sample
+Markdown Sample
 ===
 ```
 Create : 2023.06.09
 Author : Yugeta.Koji
+```
+
+```
+<script>console.log(1)</script>
 ```
 
 __Advertisement :)__
@@ -250,4 +252,4 @@ It converts "HTML", but keep intact partial entries like "xxxHTMLyyy" and so on.
 
 ::: warning
 *here be dragons*
-:::</div>
+:::
