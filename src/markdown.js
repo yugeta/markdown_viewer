@@ -7,7 +7,7 @@ export class Markdown{
     new SetCss(this.my_script)
     
     if(string){
-      this.string = new Convert(string)
+      this.text = new Convert(string).text
     }
     else{
       for(const elm of this.elms){

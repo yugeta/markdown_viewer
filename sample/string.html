@@ -1,0 +1,8 @@
+<!-- <script id='markdown' type='module' src='../src/markdown.js'></script> -->
+
+<div id='test'></div>
+
+<script type='module'>
+import { Markdown } from '../src/markdown.js'
+document.getElementById('test').innerHTML = new Markdown('__test__').text
+</script>
