@@ -2,12 +2,18 @@ import { SetCss }  from './set_css.js'
 import { Convert } from './convert.js'
 
 export class Markdown{
-  constructor(){
+  constructor(string){
     // this.set_css()
     new SetCss(this.my_script)
-    for(const elm of this.elms){
-      const convert = new Convert(elm.innerHTML)
-      elm.innerHTML = convert.text
+    
+    if(string){
+      this.string = new Convert(string)
+    }
+    else{
+      for(const elm of this.elms){
+        const convert = new Convert(elm.innerHTML)
+        elm.innerHTML = convert.text
+      }
     }
   }
 
