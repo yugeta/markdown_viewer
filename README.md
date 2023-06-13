@@ -44,3 +44,6 @@ https://blog.myntinc.com/2020/05/markdowntexthtmlmarkdownviewer.html
 
 https://draft.blogger.com/u/2/blog/post/edit/preview/1302948195388337515/5187720051686997148
 
+# Update
+- 2023.06.09 : ver 2.0 : main.js -> markdown.js に変更
+
