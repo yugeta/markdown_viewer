@@ -1,6 +1,5 @@
 import { Urlinfo } from './lib/urlinfo.js'
 
-
 export class SetCss{
   constructor(script_tag){
     if(!script_tag){return}
@@ -11,5 +10,4 @@ export class SetCss{
     link.href  = `${urlinfo.origin}/${urlinfo.dir}/markdown.css`
     script_tag.parentNode.insertBefore(link , script_tag)
   }
-
 }

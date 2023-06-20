@@ -6,44 +6,48 @@ MarkDown viewer
 ```
 Create : 2020.04.17
 Author : Yugeta.Koji
-Update : 2022.11.09
+Update : 2023.06.09
 ```
 
 # Summary
 This tool is "mark down viewer".
 You can set the markdown display for any element.
 
+
 # Howto
-
-1. 使用したいページに、main.cssを読み込む。（htmlのhead内に以下のタグを埋め込む）
+- sample-1
+1. 書き換えたいMarkdown表示させたいElementにclass='markdown'をセットする。
 ```
-<link rel='stylesheet' href='markdown_viewer/src/main.css'/>
+<div class='sentence'>
+Sample
+===
+```
+hoge-hoge
+fuga-fuga
+```
+</div>
 ```
 
-2. 実行したいjavascriptでmain.jsを読み込んで、変換したい文字が含まれている対象のエレメントをセットする。
+2. 使用したいページに、src/main.jsを読み込む。（htmlのhead内に以下のタグを埋め込む）
+```
+<script src='markdown_viewer/src/main.js'></script>
+```
+
+- sample-2
+1. モジュールを読み込んで、直接文字列を書き換える
 ```
 <script type='module'>
-import { Markdown } from './markdown_viewer/src/main.js'
-
-new Markdown({elm : element})
-</script>
-```
-
-3. 任意のタイミングで、任意のelement内を変換したい場合
-```
-<script type='module'>
-import { Markdown } from './markdown_viewer/src/main.js'
-
-const element = document.querySelector('target-element')
-element.innerHTML = new Markdown().convert(element.innerHTML)
+import { Markdown } from './markdown_viewer/src/markdown.js'
+document.getElementById('sample') = new Markdown('convertしたい文字列').text
 </script>
 ```
 
 # Homepage
 https://blog.myntinc.com/2020/05/markdowntexthtmlmarkdownviewer.html
 
-https://draft.blogger.com/u/2/blog/post/edit/preview/1302948195388337515/5187720051686997148
 
 # Update
-- 2023.06.09 : ver 2.0 : main.js -> markdown.js に変更
+- 2020.04.20 : first-commit
+- 2022.11.09 : bug-fix
+- 2023.06.09 : ver 2.0 : 起動仕様を変更
 
