@@ -10,7 +10,7 @@
 // import { Head }    from './convert/head.js'
 // import { Em }      from './convert/em.js'
 // import { Img }     from './convert/img.js'
-// import { Link }    from './convert/link.js'
+import { Link }    from './convert/link.js'
 // import { Horizon } from './convert/horizon.js'
 
 export class Convert{
@@ -210,29 +210,29 @@ export class Convert{
   replace_tag(){
     let html = ''
     for(const line_group of this.line_groups){
-      const str = line_group.target_string || ''
+      let str = line_group.target_string || ''
       if(line_group.tag){
         const tag = line_group.tag
         if(line_group.tag_close){
-          html += `<${tag}>${str}</${tag}>` + '\n'
+          str = `<${tag}>${str}</${tag}>`
         }
         else if(line_group.tag === 'code' || line_group.tag === 'blockquote'){
-          html += `<${tag}>${str}`
+          str = `<${tag}>${str}`
         }
         else{
-          html += `<${tag}>${str}` + '\n'
+          str = `<${tag}>${str}`
         }
       }
-      else{
-        html += this.single_tag(str) + '\n'
-      }
+      str = this.single_tag(str)
+
+      html += str
     }
     return html
   }
 
   single_tag(str){
-    str = this.tag_br(str)
-
+    // str = this.tag_br(str)
+    str = Link.tag(str)
     return str
   }
 
