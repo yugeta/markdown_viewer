@@ -1,300 +1,442 @@
-// import { Temp }    from './convert/temp.js'
-
-// import { Table }   from './convert/table.js'
-// import { Quote }   from './convert/quote.js'
-// import { H1 }      from './convert/h1.js'
-// import { Pre }     from './convert/pre.js'
-// import { List }    from './convert/list.js'
-
-// import { Br }      from './convert/br.js'
-// import { Head }    from './convert/head.js'
-// import { Em }      from './convert/em.js'
-// import { Img }     from './convert/img.js'
-import { Link }    from './convert/link.js'
-// import { Horizon } from './convert/horizon.js'
-
 export class Convert{
   constructor(text){
     this.base_text = text
     this.lines = text.split('\n')
-    this.set_line_datas()
-    console.log(this.line_groups)
-    console.log(this.line_groups.map(e => e.type))
-    // this.text = this.lines.join('<br>')
-    this.text = this.replace_tag()
+    const line_groups = Convert.get_line_datas(this.lines)
+    Convert.adjust_list(line_groups , 'unorderd_list' , 'ul')
+    Convert.adjust_list(line_groups , 'orderd_list' , 'ol')
+    Convert.adjust_blockquote(line_groups , 'blockquote' , 'blockquote')
+    this.text = Convert.replace_tag(line_groups)
+
+    // console.log(line_groups)
+    // console.log(line_groups.map(e => (e.tag||null) +" : "+ (e.type||null) +" : "+ (e.nest??null)))
   }
 
-  set_line_datas(){
+  static get_line_datas(lines){
     const datas = []
-    const num = {
-      ul : 0,
-      ol : 0,
-      code : 0,
-      blockquote : 0,
+    let code_count = false
+    let table_flg = false
+    let prev_type = null
+    for(let i=0; i<lines.length; i++){
+      lines[i] = lines[i].replace(/\r^/,'')
+      if(lines[i] === ''){continue}
+      const data = Convert.get_line_data(lines[i] , i)
+      if(data.type === 'code'){
+        code_count = code_count ? false : true
+        if(!code_count){
+          prev_type = data.type
+          continue
+        }
+      }
+      // table-row追加
+      if(data.type === 'table'){
+        // 新規
+        if(table_flg === false){
+          table_flg = true
+        }
+        // 追加
+        else{
+          datas[datas.length-1].cols.push(data.cols[0])
+          prev_type = data.type
+          continue
+        }
+      }
+      else if(table_flg){
+        table_flg = false
+      }
+      // blockquote
+      if(data.type === 'blockquote'){
+
+      }
+      else if(prev_type === 'blockquote' && data.type === null){
+        datas.push(data)
+        prev_type = data.type
+        continue
+      }
+
+      if(data.type || !datas.length){
+        datas.push(data)
+      }
+      else if(!datas[datas.length-1].strs){
+        data.tag = 'p'
+        datas.push(data)
+      }
+      else{
+        datas[datas.length-1].strs.push(data.str)
+      }
+      prev_type = data.type
     }
-    for(let i=0; i<this.lines.length; i++){
-      this.lines[i] = this.lines[i].replace(/\r^/,'')
-      if(this.lines[i] === ''){continue}
-      const data = this.get_line_data(this.lines[i] , i)
-      datas.push(data)
-    }
-    this.adjust_datas(datas)
-    this.line_groups = datas
+    return datas
   }
 
   // ul,ol,code,blockquote,hr,header
-  get_line_data(line_string , line_number){
-    const unorderd_list = line_string.match(/^([\t {2}]*?)([\-\+\*]) (.*?)$/s)
+  static get_line_data(str , num){
+
+    // ul
+    const unorderd_list = str.match(/^([\t {2}]*?)([\-\+\*]) (.*?)$/s)
     if(unorderd_list){
       return {
-        line_number   : line_number,
-        line_string   : line_string,
-        type          : `unorderd_list`,
-        tag           : 'li',
-        indent_number : this.get_indent_number(unorderd_list[1]),
-        target_string : this.tag(unorderd_list[3]),
-        mark          : unorderd_list[2],
+        type  : `unorderd_list`,
+        tag   : 'li',
+        nest  : Convert.get_nest(unorderd_list[1]),
+        strs  : [unorderd_list[3]],
       }
     }
 
-    const orderd_list = line_string.match(/^([\t {2}]*?)([0-9]+?\.) (.*?)$/s)
+    // ol
+    const orderd_list = str.match(/^([\t {2}]*?)([0-9]+?\.) (.*?)$/s)
     if(orderd_list){
       return {
-        line_number   : line_number,
-        line_string   : line_string,
-        type          : `orderd_list`,
-        tag           : 'li',
-        indent_number : this.get_indent_number(orderd_list[1]),
-        target_string : this.tag(orderd_list[3]),
-        mark          : orderd_list[2],
+        type  : `orderd_list`,
+        tag   : 'li',
+        nest  : Convert.get_nest(orderd_list[1]),
+        strs  : [orderd_list[3]],
+        close : true,
       }
     }
 
-    const code = line_string.match(/^([\t {2}]*?)(\`{2,3})(.*?)$/s)
+    // code
+    const code = str.match(/^([\t {2}]*?)(\`{2,3})(.*?)$/s)
     if(code){
       return {
-        line_number   : line_number,
-        line_string   : line_string,
-        type          : `code`,
-        tag           : 'code',
-        indent_number : this.get_indent_number(code[1]),
-        target_string : this.tag(code[3]),
-        mark          : code[2],
+        str   : code[3],
+        type  : `code`,
+        tag   : 'code',
+        nest  : Convert.get_nest(code[1]),
+        strs  : [],
+        close : true,
       }
     }
 
-    const blockquote = line_string.match(/^([\t {2}]*?)(\>+?) (.*?)$/s)
+    // blockquote
+    const blockquote = str.match(/^([\t {2}]*?)(\>+?) (.*?)$/s)
     if(blockquote){
+      const blockquote_val  = str
+      const blockquote_mark = blockquote_val.match(/^(>+ *)*/g)[0]
+      const blockquote_nest = (blockquote_mark.match(/>/g) || []).length -1
+      const blockquote_text = blockquote_val.replace(new RegExp(`^${blockquote_mark}`) , '')
       return{
-        line_number   : line_number,
-        line_string   : line_string,
-        type          : `blockquote`,
-        tag           : `blockquote`,
-        indent_number : this.get_indent_number(blockquote[1]),
-        count         : blockquote[2].split('>').length,
-        target_string : this.tag(blockquote[3]),
-        mark          : blockquote[2],
+        type  : `blockquote`,
+        tag   : `blockquote`,
+        nest  : blockquote_nest,
+        strs  : [blockquote_text],
+        mark  : blockquote_mark,
+        close : false,
       }
     }
 
-    const horizontal_rule = line_string.match(/^([\t {2}]*?)([\-\=\*]{3})(.*?)$/s)
+    // hr
+    const horizontal_rule = str.match(/^([\t {2}]*?)([\-\=\*]{3})(.*?)$/s)
     if(horizontal_rule){
       return {
-        line_number   : line_number,
-        line_string   : line_string,
-        type          : `hr`,
-        tag           : `hr`,
-        indent_number : this.get_indent_number(horizontal_rule[1]),
-        target_string : this.tag(horizontal_rule[3]),
-        mark          : horizontal_rule[2],
+        type  : `hr`,
+        tag   : `hr`,
+        nest  : Convert.get_nest(horizontal_rule[1]),
+        strs  : [horizontal_rule[3]],
+        close : false,
       }
     }
 
-    const header = line_string.match(/^([\t {2}]*?)(#{1,6})(.*?)$/s)
+    // header 1-6
+    const header = str.match(/^([\t {2}]*?)(#{1,6})(.*?)$/s)
     if(header){
       const count = header[2].split('#').length-1
       return {
-        line_number   : line_number,
-        line_string   : line_string,
-        type          : `header`,
-        tag           : `h${count}`,
-        count         : count,
-        indent_number : this.get_indent_number(header[1]),
-        target_string : this.tag(header[3]),
-        mark          : header[2],
-        tag_close     : true,
+        type  : `header`,
+        tag   : `h${count}`,
+        count : count,
+        nest  : Convert.get_nest(header[1]),
+        strs  : [header[3]],
+        close : true,
       }
     }
 
-    const etc = line_string.match(/^([\t {2}]*?)(.*?)$/s)
+    // table
+    const table = str.match(/^([\t {2}]*?)(\|.*?)$/s)
+    if(table){
+      return {
+        type  : `table`,
+        tag   : `table`,
+        cols  : [str.split('|').slice(1)],
+      }
+    }
+
+    // ---
+    const etc = str.match(/^([\t {2}]*?)(.*?)$/s)
     return {
-      line_number   : line_number,
-      line_string   : line_string,
-      type          : null,
-      indent_number : this.get_indent_number(etc[1]),
-      target_string : this.tag(etc[2]),
+      str   : str,
+      type  : null,
+      nest  : Convert.get_nest(etc[1]),
+      strs  : [etc[2]],
     }
   }
 
-  get_indent_number(indent_string){
+  static get_nest(indent_string){
     return indent_string ? indent_string.replace(/  /g , '\t').split('\t').length-1 : 0
   }
 
-  tag(string){
-    return string
-  }
-
-  adjust_datas(datas){
-    let current_type = null
+  static adjust_list(datas , type , tag){
+    let prev_nest = null
+    let prev_type = null
+    let keep_nest = null
     for(let i=0; i<datas.length; i++){
-
-      if(current_type === 'blockquote' && datas[i].type !== current_type){
-        datas.splice(i,0,{
-          type : `blockquote`,
-          tag  : '/blockquote'
-        })
-        i++
-      }
-
-      if(!datas[i].type){continue}
-
-      // code
-      if(datas[i].type === 'code'){
-        // end
-        if(current_type === datas[i].type){
-          datas[i].tag = `/${datas[i].tag}`
-        }
-      }
-
-
-      // ul,ol
-      if(datas[i].type !== current_type){
-        // end
-        if(current_type === 'unorderd_list'){
+      // keep
+      if(keep_nest !== null && keep_nest > datas[i].nest){
+        for(let j=keep_nest; j>=datas[i].nest; j--){
           datas.splice(i,0,{
-            type : `unorderd_list`,
-            tag  : '/ul'
+            type : type,
+            tag  : `/${tag}`,
+            nest : j,
           })
           i++
         }
-        if(current_type === 'orderd_list'){
-          datas.splice(i,0,{
-            type : `orderd_list`,
-            tag  : '/ol'
-          })
-          i++
+        keep_nest = null
+      }
+      // end
+      if((datas[i].type !== type && prev_type === type)){
+        if(prev_nest > datas[i].nest || datas[i].nest === 0){
+          for(let j=prev_nest; j>=datas[i].nest; j--){
+            datas.splice(i,0,{
+              type : type,
+              tag  : `/${tag}`,
+              nest : j,
+            })
+            i++
+          }
+        }
+        else{
+          keep_nest = datas[i].nest
+        }
+      }
+      // start
+      if(datas[i].type === type){
+        // end
+        if(prev_nest && prev_nest > datas[i].nest){
+          let diff = (prev_nest || 0) - datas[i].nest
+          for(let j=0; j<diff; j++){
+            datas.splice(i,0,{
+              type : type,
+              tag  : `/${tag}`,
+              nest : datas[i].nest,
+            })
+            i++
+          }
         }
 
         // start
-        if(datas[i].type === 'unorderd_list'){
+        if(prev_type === null || prev_type !== type || prev_nest < datas[i].nest){
           datas.splice(i,0,{
-            type : 'unorderd_list',
-            tag : `ul`,
-          })
-          i++
-        }
-        if(datas[i].type === 'orderd_list'){
-          datas.splice(i,0,{
-            type : 'orderd_list',
-            tag : `ol`,
+            type : type,
+            tag  : tag,
+            nest : datas[i].nest,
           })
           i++
         }
       }
-      current_type = datas[i].type
+      prev_nest = datas[i].nest
+      prev_type = datas[i].type
     }
-    
-    // console.log(datas)
   }
 
-  replace_tag(){
-    let html = ''
-    for(const line_group of this.line_groups){
-      let str = line_group.target_string || ''
-      if(line_group.tag){
-        const tag = line_group.tag
-        if(line_group.tag_close){
+  static adjust_blockquote(datas , type , tag){
+    let prev_nest = null
+    let prev_type = null
+    let keep_nest = null
+    for(let i=0; i<datas.length; i++){
+      // start
+      if(datas[i].type === type){
+        if(prev_type === null || prev_type !== type || (prev_nest !== null && prev_nest < datas[i].nest)){
+          
+          datas.splice(i,0,{
+            type : type,
+            tag  : tag,
+            nest : datas[i].nest,
+          })
+          i++
+          prev_nest = datas[i].nest
+          prev_type = datas[i].type
+
+          datas[i].type = null
+          datas[i].tag  = null
+
+          prev_nest = datas[i].nest
+          
+          continue
+        }
+        else if(prev_type === type && prev_nest >= datas[i].nest){
+          datas[i].type = null
+          datas[i].tag  = null
+          continue
+        }
+      }
+      else if(prev_nest !== null && datas[i].type !== type){
+        if(prev_type === type){
+          for(let j=0; j<=prev_nest; j++){
+            datas.splice(i,0,{
+              type : type,
+              tag  : `/${tag}`,
+            })
+            i++
+          }
+          prev_nest = null
+        }
+      }
+      prev_type = datas[i].type
+    }
+  }
+
+  static replace_tag(datas){
+    let html = []
+    let current_type = null
+    for(const data of datas){
+      let str = Convert.lines2line(data.strs)
+      if(data.tag){
+        const tag = data.tag
+        if(data.close){
           str = `<${tag}>${str}</${tag}>`
         }
-        else if(line_group.tag === 'code' || line_group.tag === 'blockquote'){
-          str = `<${tag}>${str}`
+        else if(tag === 'table'){
+          str = Convert.set_table(data)
         }
         else{
           str = `<${tag}>${str}`
         }
       }
-      str = this.single_tag(str)
-
-      html += str
+      else if(current_type === 'code'){
+        str += '\n'
+      }
+      html.push(str)
+      current_type = data.type || current_type
     }
-    return html
+    return html.join('\n')
   }
 
-  single_tag(str){
-    // str = this.tag_br(str)
-    str = Link.tag(str)
+  static lines2line(strs){
+    if(!strs || !strs.length){
+      return ''
+    }
+    const arr = []
+    const temp = Convert.temp(strs)
+    for(const str of strs){
+      arr.push(Convert.single_tag(str , temp))
+    }
+    return arr.join('\n')
+  }
+
+  static single_tag(str , temp){
+    str = Convert.tag_br(str)
+    str = Convert.tag_img(str , temp)
+    str = Convert.tag_link(str)
     return str
   }
 
-  tag_br(str){
-    const res = str.match(/^(.*?) {2}$/s)
+  static tag_link(text){
+    const res = text.match(/^(.*?)\[(.+?)\]\((.+?)\)(.*?)$/)
+    if(res){
+      const sp = res[3].split(' ')
+      const link  = sp[0].trim()
+      const title = sp[1] ? `title="${sp.splice(1).join(' ').replace(/\"/g,'').replace(/\'/g,'').trim()}"` : ''
+      return `${res[1]}<a href='${link}' ${title}/>${res[2]}</a>${res[4]}`
+    }
+    else{  
+      return text
+    }
+  }
+
+  static tag_br(str){
+    const res = str.match(/(.+?)( {2,})$/s)
     if(res){
       str = `${res[1]}<br>`
     }
     return str
   }
 
-  // constructor(text){
-  //   const lines = text.split('\n')
-  //   const temps = Temp.search(lines)
+  static tag_img(str , temps){
+    const res0 = str.match(/^(.*?)!\[(.+?)\]\((.+?)( "(.*?)")*\)*$/)
+    if(res0){
+      const url   = res0[3]
+      const alt   = res0[2]||''
+      const title = res0[5]||''
+      str = `${res0[1]}<img src='${url}' alt='${alt}' title='${title}'/>`
+    }
 
-  //   for(var i=0; i<lines.length; i++){
-  //     lines[i] = Br.tag(lines[i])
-  //     lines[i] = Head.tag(lines[i])
-  //     lines[i] = Em.tag(lines[i]) // emphasis
-  //     lines[i] = Img.tag(lines[i] , temps)
-  //     lines[i] = Link.tag(lines[i])
-  //     lines[i] = Horizon.tag(lines[i])
-  //   }
-  //   text = lines.join('\n')
-  //   text = List.tag(text)
-  //   text = Pre.tag(text)
-  //   text = H1.tag(text)
-  //   text = Quote.tag(text)
-  //   text = Table.tag(text)
-  //   this.text = text
-  // }
+    // temp
+    const res1 = str.match(/^(.*?)!\[(.+?)\]\[(.+?)\](.*?)$/)
+    if(res1){
+      const temp = temps.find(e => e.key === res1[3])
 
-  // static md_match(exp , text){
-  //   const reg = RegExp(exp , 's')
-  //   return text.match(reg)
-  // }  
+      if(temp){
+        const url   = temp.value
+        const alt   = res1[2]||''
+        const title = temp.title
+        str = `${res1[1]}<img src='${url}' alt='${alt}' title='${title}'/>${res1[4]}`
+      }
+    }
+    return str
+  }
 
-  // static urlinfo(uri){
-  //   const urls_hash  = uri.split("#")
-  //   const urls_query = urls_hash[0].split("?")
-	// 	const sp   = urls_query[0].split("/")
-	// 	const data = {
-  //     uri      : uri,
-	// 	  url      : sp.join("/"),
-  //     dir      : sp.slice(0 , sp.length-1).join("/") +"/",
-  //     file     : sp.pop(),
-	// 	  domain   : sp[2] ? sp[2] : "",
-  //     protocol : sp[0] ? sp[0].replace(":","") : "",
-  //     hash     : (urls_hash[1]) ? urls_hash[1] : "",
-	// 	  query    : (urls_query[1])?(function(urls_query){
-	// 			var data = {};
-	// 			var sp   = urls_query.split("#")[0].split("&")
-	// 			for(var i=0;i<sp .length;i++){
-	// 				var kv = sp[i].split("=")
-	// 				if(!kv[0]){continue}
-	// 				data[kv[0]]=kv[1]
-	// 			}
-	// 			return data;
-	// 		})(urls_query[1]):[]
-	// 	}
-	// 	return data
-  // }
+  static set_table(data){
+    const aligns = []
+    for(const cell of data.cols[1]){
+      const str = cell.trim()
+      if(!str){continue}
+      const align = Convert.set_table_align(str)
+      aligns.push(align)
+    }
+
+    const html = ['<table>'];
+    // head
+    html.push('<thead>')
+    html.push('<tr>')
+    for(let j=0; j<aligns.length; j++){
+      const cell = data.cols[0][j] ?? ''
+      html.push(`<th>${cell}</th>`)
+    }
+    html.push('</tr>')
+    html.push('</thead>')
+
+    
+
+    html.push('<tbody>')
+    for(let i=2; i<data.cols.length; i++){
+      html.push('<tr>')
+      for(let j=0; j<aligns.length; j++){
+        const cell = data.cols[i][j] ?? ''
+        html.push(`<td>${cell}</td>`)
+      }
+      html.push('</tr>')
+    }
+    html.push('</tbody>')
+    html.push('<table>');
+
+    return html.join('\n')
+  }
+  static set_table_align(str){
+    if(str.match(/^\-+?:$/)){
+      return 'right'
+    }
+    else if(str.match(/^:\-+?:$/)){
+      return 'center';
+    }
+    else{
+      return 'left'
+    }
+  }
+
+  static temp(lines){
+    if(!lines || !lines.length){return}
+    const arr = []
+    for(const line of lines){
+      const res = line.match(/\[(.+?)\]\:(.+?)( "(.*?)")*\)*$/)
+      if(!res){continue}
+      arr.push({
+        key   : res[1],
+        value : (res[2] || '').trim(),
+        title : res[4] || ''
+      })
+    }
+    return arr
+  }
 }
 
 

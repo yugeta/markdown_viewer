@@ -451,3 +451,21 @@ code{
   padding:10px;
   display:block;
 }
+
+blockquote{
+  padding:5px 5px 5px 10px;
+  border-left:4px solid #aaa;
+  margin:10px 0;
+}
+
+table{
+  border-collapse : collapse;
+}
+table th{
+  background-color:#eee;
+}
+table th,td{
+  border:1px solid #aaa;
+  padding:10px;
+}
+
