@@ -9,7 +9,7 @@ export class Convert{
     Convert.hr_before_header(line_groups)
     this.text = Convert.replace_tag(line_groups)
 
-    console.log(line_groups)
+    // console.log(line_groups)
     // console.log(line_groups.map(e => (e.tag||null) +" : "+ (e.type||null) +" : "+ (e.nest??null)))
   }
 
