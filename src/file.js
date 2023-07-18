@@ -5,6 +5,10 @@ export class File{
     this.filepath = filepath
     this.selector = selector
     this.load()
+    this.set_markdown()
+  }
+  get elm(){
+    return document.querySelector(this.selector)
   }
   load(){
     const xhr = new XMLHttpRequest()
@@ -14,7 +18,10 @@ export class File{
     xhr.send()
   }
   loaded(e){
-    document.querySelector(this.selector).innerHTML = new Markdown(e.target.response).text
+    this.elm.innerHTML = new Markdown(e.target.response).text
+  }
+  set_markdown(){
+    this.elm.setAttribute('data-markdown' , 'converted')
   }
 }
 

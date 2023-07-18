@@ -5,6 +5,10 @@
   /* white-space : pre-wrap;
   word-break : break-all; */
   background-color:white;
+  line-height:2;
+}
+[data-markdown="converted"] *{
+  line-height:2;
 }
 /* [data-markdown="converted"]:after,
 [data-markdown="converted"]:before {
@@ -75,8 +79,8 @@
 [data-markdown="converted"] h2{
   font-weight: 600;
 
-  padding-bottom: .3em;
-  border-bottom: 1px solid #eaecef;
+  /* padding-bottom: .3em; */
+  /* border-bottom: 1px solid #eaecef; */
 }
 
 [data-markdown="converted"] h2,
@@ -214,21 +218,21 @@
 
   border-bottom-color: #eee;
 
-  height: .25em;
+  height: 2px;
   padding: 0;
   margin: 24px 0;
   background-color: #e1e4e8;
   border: 0;
 }
-[data-markdown="converted"] hr:after,
+/* [data-markdown="converted"] hr:after,
 [data-markdown="converted"] hr:before {
   display: table;
   content: "";
-}
+} */
 
-[data-markdown="converted"] hr:after {
+/* [data-markdown="converted"] hr:after {
   clear: both;
-}
+} */
 
 
 [data-markdown="converted"] input {
@@ -392,6 +396,9 @@
 [data-markdown="converted"] pre {
   font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace;
   font-size: 14px;
+  line-height:1.6;
+  padding:20px;
+  margin-bottom:10px;
 }
 
 [data-markdown="converted"] pre {

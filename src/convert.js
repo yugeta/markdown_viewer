@@ -6,6 +6,7 @@ export class Convert{
     Convert.adjust_list(line_groups , 'unorderd_list' , 'ul')
     Convert.adjust_list(line_groups , 'orderd_list' , 'ol')
     Convert.adjust_blockquote(line_groups , 'blockquote' , 'blockquote')
+    Convert.hr_before_header(line_groups)
     this.text = Convert.replace_tag(line_groups)
 
     console.log(line_groups)
@@ -23,6 +24,7 @@ export class Convert{
       if(lines[i] === ''){continue}
       const data = Convert.get_line_data(lines[i] , i)
       // console.log(data)
+
       if(data.type === 'code'){
         code_count = code_count ? false : true
         continue_flg = code_count
@@ -137,7 +139,7 @@ export class Convert{
     }
 
     // hr
-    const horizontal_rule = str.match(/^([\t {2}]*?)([\-\=\*]{3})(.*?)$/s)
+    const horizontal_rule = str.match(/^([\t {2}]*?)([\-\=\*]{1,3})(.*?)$/s)
     if(horizontal_rule){
       return {
         type  : `hr`,
@@ -172,7 +174,7 @@ export class Convert{
       }
     }
 
-    // ---
+    // etc
     const etc = str.match(/^([\t {2}]*?)(.*?)$/s)
     return {
       str   : str,
@@ -447,6 +449,20 @@ export class Convert{
       })
     }
     return arr
+  }
+
+  static hr_before_header(datas){
+    for(let i=0; i<datas.length; i++){
+      const before = i > 0 ? datas[i-1] : null
+      const data   = datas[i]
+      // console.log(data)
+      if(data.type === 'hr' && !before.type){
+        // console.log(data)
+        before.type  = 'header'
+        before.tag   = 'h1'
+        before.close = true
+      }
+    }
   }
 }
 

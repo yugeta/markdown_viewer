@@ -11,6 +11,7 @@ export class Markdown{
     else{
       for(const elm of this.elms){
         elm.innerHTML = new Convert(elm.textContent).text
+        elm.setAttribute('data-markdown' , 'converted')
       }
     }
   }
