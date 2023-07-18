@@ -8,26 +8,30 @@ export class Convert{
     Convert.adjust_blockquote(line_groups , 'blockquote' , 'blockquote')
     this.text = Convert.replace_tag(line_groups)
 
-    // console.log(line_groups)
+    console.log(line_groups)
     // console.log(line_groups.map(e => (e.tag||null) +" : "+ (e.type||null) +" : "+ (e.nest??null)))
   }
 
   static get_line_datas(lines){
     const datas = []
     let code_count = false
+    let continue_flg = false
     let table_flg = false
     let prev_type = null
     for(let i=0; i<lines.length; i++){
       lines[i] = lines[i].replace(/\r^/,'')
       if(lines[i] === ''){continue}
       const data = Convert.get_line_data(lines[i] , i)
+      // console.log(data)
       if(data.type === 'code'){
         code_count = code_count ? false : true
+        continue_flg = code_count
         if(!code_count){
           prev_type = data.type
           continue
         }
       }
+
       // table-row追加
       if(data.type === 'table'){
         // 新規
@@ -44,6 +48,7 @@ export class Convert{
       else if(table_flg){
         table_flg = false
       }
+
       // blockquote
       if(data.type === 'blockquote'){
 
@@ -61,10 +66,16 @@ export class Convert{
         data.tag = 'p'
         datas.push(data)
       }
+      else if(!continue_flg){
+        datas.push(data)
+      }
       else{
         datas[datas.length-1].strs.push(data.str)
       }
-      prev_type = data.type
+
+      // console.log(data.type,prev_type,code_count)
+      // prev_type = data.type
+      prev_type = continue_flg && prev_type ? prev_type : data.type
     }
     return datas
   }
