@@ -4,7 +4,7 @@ export class Convert{
     this.lines = text.split('\n')
     const line_groups = Convert.get_line_datas(this.lines)
     Convert.adjust_list(line_groups , 'unorderd_list' , 'ul')
-    Convert.adjust_list(line_groups , 'orderd_list' , 'ol')
+    Convert.adjust_list(line_groups , 'orderd_list'   , 'ol')
     Convert.adjust_blockquote(line_groups , 'blockquote' , 'blockquote')
     Convert.hr_before_header(line_groups)
     this.text = Convert.replace_tag(line_groups)
@@ -303,8 +303,14 @@ export class Convert{
     let current_type = null
     for(const data of datas){
       let str = Convert.lines2line(data.strs)
+      // str = str.replace(/</g , '&lt;')
       if(data.tag){
         const tag = data.tag
+
+        if(tag === 'code'){
+          str = str.replace(/</g , '&lt;')
+        }
+
         if(data.close){
           str = `<${tag}>${str}</${tag}>`
         }
@@ -316,12 +322,15 @@ export class Convert{
         }
       }
       else if(current_type === 'code'){
+        // console.log(str)
+        // str = str.replace(/\</g , '&lt;')
         str += '\n'
       }
       html.push(str)
       current_type = data.type || current_type
     }
-    return html.join('\n')
+    const html_content = Convert.html_convert(html.join('\n'))
+    return html_content
   }
 
   static lines2line(strs){
@@ -340,9 +349,36 @@ export class Convert{
     str = Convert.tag_br(str)
     str = Convert.tag_img(str , temp)
     str = Convert.tag_link(str)
+    str = Convert.tag_bold(str)
+    str = Convert.escape(str)
     return str
   }
 
+  // 1ライン複数リンク対応
+  static tag_link(str){
+    const reg = RegExp('\\[(.*?)\\]\\((.*?)\\)','g')
+    const arr = []
+    let res = []
+    while ((res = reg.exec(str)) !== null) {
+      const sp = res[2].split(' ')
+      arr.push({
+        input : res.input,
+        base  : res[0],
+        text  : res[1],
+        link  : sp[0].trim(),
+        title : sp[1] ? `title="${sp.splice(1).join(' ').replace(/\"/g,'').replace(/\'/g,'').trim()}"` : '',
+      })
+    }
+    if(arr && arr.length){
+      console.log(arr)
+      for(const data of arr){
+        const tag     = `<a href='${data.link}' ${data.title}/>${data.text}</a>`
+        str = str.split(data.base).join(tag)
+      }
+    }
+    return str
+  }
+  // 1ライン1リンク用
   static tag_link(text){
     const res = text.match(/^(.*?)\[(.+?)\]\((.+?)\)(.*?)$/)
     if(res){
@@ -463,6 +499,26 @@ export class Convert{
         before.close = true
       }
     }
+  }
+
+  static html_convert(str){
+    str = Convert.tag_bold(str)
+    // str = Convert.escape(str)
+    return str
+  }
+
+  static tag_bold(str){
+    const res = str.match(/^(.*?)__(.+?)__(.*?)$/s)
+    if(res){
+      str = `${res[1]}<b>${res[2]}</b>${res[3]}`
+    }
+    return str
+  }
+
+  static escape(str){
+    // const arr = str.match(/\(.)/s)
+    str = str.replace(/\\</g,'&lt;')
+    return str
   }
 }
 
